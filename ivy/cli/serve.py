@@ -3,6 +3,7 @@
 # --------------------------------------------------------------------------
 
 import sys
+import ssl
 import os
 import http.server
 import webbrowser
@@ -28,8 +29,10 @@ Usage: %s serve [FLAGS] [OPTIONS]
 
 Options:
   -b, --browser <str>       Specify a browser to open by name.
+  -c, --ssl-cert <path>     path to certificate for SSL connection (must also provide a key)
   -d, --directory <path>    Specify a custom directory to serve.
   -h, --host <str>          Host IP address. Defaults to localhost.
+  -k, --ssl-key <path>      path to key for SSL connection (must also provide a certificate)
   -p, --port <int>          Port number. Defaults to 0, i.e. random.
 
 Flags:
@@ -47,6 +50,8 @@ def register_command(parser):
     cmd.new_str("directory d")
     cmd.new_str("host h", fallback="localhost")
     cmd.new_int("port p", fallback=0)
+    cmd.new_str("ssl-key k")
+    cmd.new_str("ssl-cert c")
     cmd.new_str("b browser")
 
 
@@ -69,6 +74,13 @@ def callback(parser):
             (parser['host'], parser['port']),
             http.server.SimpleHTTPRequestHandler
         )
+        if parser['ssl-key'] and parser['ssl-cert']:
+             server.socket = ssl.wrap_socket(
+                 server.socket,
+                 keyfile=parser['ssl-key'],
+                 certfile=parser['ssl-cert'],
+                 server_side=True)
+
     except PermissionError:
         sys.exit("Error: use 'sudo' to run on a port below 1024.")
     except OSError:
